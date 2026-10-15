@@ -244,8 +244,6 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 .hero__title .aka{font-size:.26em;letter-spacing:-.01em;color:var(--mute);margin-left:.5em;vertical-align:baseline}
 @media(max-width:700px){.hero__title .aka{display:block;font-size:.3em;margin:.2em 0 0 .1em}}
 
-/* aka: mismo hover que los links del menú (color + subrayado) */
+/* aka: hover discreto, solo cambia de color */
 .hero__title a.aka{position:relative;transition:color .4s}
-.hero__title a.aka::after{content:"";position:absolute;left:0;right:0;bottom:.12em;height:1px;background:currentColor;transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease)}
 .hero__title a.aka:hover{color:var(--fg)}
-.hero__title a.aka:hover::after{transform:scaleX(1);transform-origin:left}
