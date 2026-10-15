@@ -239,3 +239,7 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 .nav__cta.is-compact{padding:9px 11px;min-width:40px}
 .nav__cta.is-compact .cta__text{max-width:0;opacity:0}
 .nav__cta.is-compact .cta__mark{max-width:30px;opacity:1}
+
+/* aka @usuario junto al apellido */
+.hero__title .aka{font-size:.26em;letter-spacing:-.01em;color:var(--mute);margin-left:.5em;vertical-align:baseline}
+@media(max-width:700px){.hero__title .aka{display:block;font-size:.3em;margin:.2em 0 0 .1em}}
