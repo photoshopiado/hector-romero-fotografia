@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://haromero93.github.io/hector-romero-fotografia/sitemap.xml
+Sitemap: https://photoshopiado.github.io/hector-romero-fotografia/sitemap.xml
