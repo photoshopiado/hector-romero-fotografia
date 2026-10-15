@@ -21,7 +21,7 @@ const imgSrc = p => 'img/' + p.img;
 const imgFallback = p => 'img/' + p.img;
 
 track.innerHTML = PROJECTS.map((p, i) => `
-  <a class="card" href="https://www.behance.net/gallery/${p.id}" target="_blank" rel="noopener" data-cursor="Ver">
+  <a class="card" href="https://www.behance.net/gallery/${p.id}" target="_blank" rel="noopener" data-cursor="Ver más">
     <div class="card__media">
       <span class="card__num">${pad(i + 1)} / ${pad(PROJECTS.length)}</span>
       <span class="card__go">↗</span>
@@ -94,7 +94,7 @@ intro
 const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
 const slidesEl = document.getElementById('slides'), titlesEl = document.getElementById('showTitles');
 slidesEl.innerHTML = FEATURED.map(p => `
-  <a class="slide" href="https://www.behance.net/gallery/${p.id}" target="_blank" rel="noopener" data-cursor="Ver" aria-label="${p.t} en Behance">
+  <a class="slide" href="https://www.behance.net/gallery/${p.id}" target="_blank" rel="noopener" data-cursor="Ver más" aria-label="${p.t} en Behance">
     <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
   </a>`).join('');
 titlesEl.innerHTML = FEATURED.map(p => `<h3 class="show__t">${p.t}</h3>`).join('');
