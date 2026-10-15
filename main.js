@@ -204,27 +204,11 @@ addEventListener('scroll', toggleCta, { passive: true });
 toggleCta();
 
 
-/* aka @photoshopiado: letras que se re-componen + partículas crema */
+/* aka @photoshopiado: onda suave en las letras + partículas crema */
 (() => {
   const aka = document.querySelector('.aka');
   if (!aka || reduce) return;
   const chars = [...aka.querySelectorAll('.ch')];
-  const real = chars.map(c => c.textContent);
-  const GLYPHS = 'abcdefghijklmnopqrstuvwxyz';
-  let busy = false;
-  const scramble = () => {
-    if (busy) return; busy = true;
-    let frame = 0; const end = chars.length * 1.1 + 8;
-    const id = setInterval(() => {
-      frame++;
-      chars.forEach((c, i) => {
-        const done = frame > i * 1.1 + 6;
-        c.textContent = done || real[i] === ' ' || real[i] === '@' ? real[i] : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-      });
-      if (frame > end) { clearInterval(id); busy = false; chars.forEach((c, i) => c.textContent = real[i]); }
-    }, 32);
-  };
-
   const cv = document.createElement('canvas'); cv.className = 'fx'; cv.setAttribute('aria-hidden', 'true');
   document.body.appendChild(cv);
   const ctx = cv.getContext('2d');
@@ -254,7 +238,10 @@ toggleCta();
     });
     ctx.globalAlpha = 1;
   });
-  aka.addEventListener('pointerenter', () => { scramble(); burst(); });
+  aka.addEventListener('pointerenter', () => {
+    burst();
+    gsap.fromTo(chars, { y: 0 }, { y: -7, duration: .22, ease: 'power2.out', yoyo: true, repeat: 1, stagger: .025, overwrite: true });
+  });
   aka.addEventListener('pointermove', e => { for (let i = 0; i < 2; i++) spawn(e.clientX + (Math.random() - .5) * 14, e.clientY + (Math.random() - .5) * 8, false); });
   // cada letra se levanta cuando el puntero pasa por encima
   chars.forEach(c => {
