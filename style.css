@@ -243,3 +243,8 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 /* aka @usuario junto al apellido */
 .hero__title .aka{font-size:.26em;letter-spacing:-.01em;color:var(--mute);margin-left:.5em;vertical-align:baseline}
 @media(max-width:700px){.hero__title .aka{display:block;font-size:.3em;margin:.2em 0 0 .1em}}
+
+/* aka: hover con scramble + partículas */
+.hero__title a.aka{transition:color .4s,text-shadow .4s}
+.hero__title a.aka:hover{color:var(--fg);text-shadow:0 0 24px rgba(239,233,220,.35)}
+.fx{position:fixed;inset:0;width:100%;height:100%;z-index:85;pointer-events:none}

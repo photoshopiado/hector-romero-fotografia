@@ -202,3 +202,62 @@ const cta = document.querySelector('.nav__cta');
 const toggleCta = () => cta.classList.toggle('is-compact', window.scrollY > 80);
 addEventListener('scroll', toggleCta, { passive: true });
 toggleCta();
+
+
+/* aka @photoshopiado: letras que se re-componen + partículas crema */
+(() => {
+  const aka = document.querySelector('.aka');
+  if (!aka || reduce) return;
+  const chars = [...aka.querySelectorAll('.ch')];
+  const real = chars.map(c => c.textContent);
+  const GLYPHS = 'abcdefghijklmnopqrstuvwxyz';
+  let busy = false;
+  const scramble = () => {
+    if (busy) return; busy = true;
+    let frame = 0; const end = chars.length * 1.1 + 8;
+    const id = setInterval(() => {
+      frame++;
+      chars.forEach((c, i) => {
+        const done = frame > i * 1.1 + 6;
+        c.textContent = done || real[i] === ' ' || real[i] === '@' ? real[i] : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      });
+      if (frame > end) { clearInterval(id); busy = false; chars.forEach((c, i) => c.textContent = real[i]); }
+    }, 32);
+  };
+
+  const cv = document.createElement('canvas'); cv.className = 'fx'; cv.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  let dpr = 1, parts = [];
+  const resize = () => { dpr = Math.min(devicePixelRatio || 1, 2); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; };
+  resize(); addEventListener('resize', resize);
+  const spawn = (x, y, burst) => {
+    const a = Math.random() * Math.PI * 2, s = burst ? 1 + Math.random() * 3.2 : .4 + Math.random() * 1.4;
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (burst ? 0 : .8), r: .8 + Math.random() * 2.2, life: 1, d: .012 + Math.random() * .016, plus: Math.random() < .18 });
+  };
+  const burst = () => {
+    const r = aka.getBoundingClientRect();
+    for (let i = 0; i < 46; i++) spawn(r.left + Math.random() * r.width, r.top + r.height * (.3 + Math.random() * .5), true);
+  };
+  gsap.ticker.add(() => {
+    if (!parts.length) { if (cv.dataset.dirty) { ctx.clearRect(0, 0, cv.width, cv.height); delete cv.dataset.dirty; } return; }
+    cv.dataset.dirty = '1';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.fillStyle = ctx.strokeStyle = '#efe9dc';
+    parts = parts.filter(p => p.life > 0);
+    parts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vx *= .965; p.vy = p.vy * .965 - .012; p.life -= p.d;
+      ctx.globalAlpha = Math.max(p.life, 0);
+      if (p.plus) { ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x - 3, p.y); ctx.lineTo(p.x + 3, p.y); ctx.moveTo(p.x, p.y - 3); ctx.lineTo(p.x, p.y + 3); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill(); }
+    });
+    ctx.globalAlpha = 1;
+  });
+  aka.addEventListener('pointerenter', () => { scramble(); burst(); });
+  aka.addEventListener('pointermove', e => { for (let i = 0; i < 2; i++) spawn(e.clientX + (Math.random() - .5) * 14, e.clientY + (Math.random() - .5) * 8, false); });
+  // cada letra se levanta cuando el puntero pasa por encima
+  chars.forEach(c => {
+    c.addEventListener('pointerenter', () => gsap.fromTo(c, { y: 0 }, { y: -10, duration: .18, ease: 'power2.out', yoyo: true, repeat: 1, overwrite: true }));
+  });
+})();
