@@ -158,7 +158,9 @@ function heroDust() {
   };
 
   addEventListener('pointermove', e => {
-    if (!ready || scrollY > 30) { active = false; return; }
+    if (scrollY > 30) { active = false; return; }
+    if ((!ready || !N || W !== innerWidth || H !== innerHeight) && !running) build();
+    if (!ready) { active = false; return; }
     mouse.x = e.clientX; mouse.y = e.clientY;
     const inside = e.clientX > box.x0 && e.clientX < box.x1 && e.clientY > box.y0 && e.clientY < box.y1;
     if (inside) { lastIn = performance.now(); active = true; start(); } else active = false;
@@ -179,9 +181,8 @@ intro
   .to('.loader__count, .loader__top', { yPercent: -30, opacity: 0, duration: .6, ease: 'power3.in' }, '+=.1')
   .to('.loader', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, '-=.2')
   .add(() => { document.body.classList.remove('is-loading'); lenis.start(); }, '-=.5')
-  .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: 'expo.out', stagger: .045 }, '-=.6')
-  .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9')
-  .add(heroDust);
+  .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: 'expo.out', stagger: .045, onComplete: heroDust }, '-=.6')
+  .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9');
 
 /* destacados: carrusel 3D en anillo (como la referencia): las tarjetas giran sobre un cilindro,
    las del fondo se ven por detrás (reverso) y la que entra al centro se desenfoca mientras se mueve */
