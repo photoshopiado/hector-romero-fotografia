@@ -145,9 +145,10 @@ function heroDust() {
   };
 
   const start = () => {
-    if (!running) { running = true; gsap.ticker.add(frame); }
-    // primero entra el lienzo encima del texto; recién entonces se oculta el texto
-    gsap.to(cv, { opacity: 1, duration: .16, overwrite: true, onComplete: () => { if (running) gsap.set(nameChars, { opacity: 0 }); } });
+    if (!running) { running = true; gsap.ticker.add(frame); frame(); }   // dibuja ya, sin esperar al siguiente cuadro
+    gsap.killTweensOf(cv);
+    cv.style.opacity = 1;                 // los puntos cubren el texto exactamente...
+    gsap.set(nameChars, { opacity: 0 });  // ...y en el mismo instante se oculta el texto: sin superposición
   };
   const stop = () => {
     running = false; gsap.ticker.remove(frame);
