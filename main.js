@@ -105,20 +105,21 @@ function heroDust() {
       });
     });
     box = { x0: x0 - 30, y0: y0 - 20, x1: x1 + 30, y1: y1 + 20 };
-    let step = Math.max(3, Math.round(W / 300)), pts = [];
+    let step = Math.max(2, Math.round(W / 480)), pts = [];
     for (let tries = 0; tries < 4; tries++) {
       const data = o.getImageData(0, 0, W, H).data; pts = [];
-      for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (data[(y * W + x) * 4 + 3] > 120) pts.push(x, y);
-      if (pts.length / 2 <= 16000) break;
+      const hs = step >> 1;
+      for (let y = 0; y < H - step; y += step) for (let x = 0; x < W - step; x += step) if (data[((y + hs) * W + x + hs) * 4 + 3] > 110) pts.push(x + step / 2, y + step / 2);
+      if (pts.length / 2 <= 26000) break;
       step++;
     }
-    N = pts.length / 2; dotR = Math.max(1.2, step * .5);
+    N = pts.length / 2; dotR = Math.max(1, step * .55);
     P = Array.from({ length: N }, (_, i) => ({ hx: pts[i * 2], hy: pts[i * 2 + 1], x: pts[i * 2], y: pts[i * 2 + 1], vx: 0, vy: 0 }));
     if (!cv) {
       cv = document.createElement('canvas'); cv.className = 'fx fx--intro'; cv.setAttribute('aria-hidden', 'true'); cv.style.opacity = 0;
       document.body.appendChild(cv); ctx = cv.getContext('2d');
     }
-    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ready = true;
   };
 
@@ -137,22 +138,22 @@ function heroDust() {
       p.vx += (p.hx - p.x) * .055; p.vy += (p.hy - p.y) * .055;
       p.vx *= .84; p.vy *= .84; p.x += p.vx; p.y += p.vy;
       if (Math.abs(p.vx) + Math.abs(p.vy) > .08 || Math.abs(p.hx - p.x) + Math.abs(p.hy - p.y) > .8) moving++;
-      ctx.moveTo(p.x + dotR, p.y); ctx.arc(p.x, p.y, dotR, 0, 6.2832);
+      ctx.rect(p.x - dotR, p.y - dotR, dotR * 2, dotR * 2);
     }
     ctx.fill();
     if (!active && !moving && performance.now() - lastIn > 400) stop();
   };
 
   const start = () => {
-    if (running) return;
-    running = true; gsap.ticker.add(frame);
-    gsap.to(cv, { opacity: 1, duration: .2, overwrite: true });
-    gsap.to(nameChars, { opacity: 0, duration: .2, overwrite: 'auto' });
+    if (!running) { running = true; gsap.ticker.add(frame); }
+    // primero entra el lienzo encima del texto; recién entonces se oculta el texto
+    gsap.to(cv, { opacity: 1, duration: .16, overwrite: true, onComplete: () => { if (running) gsap.set(nameChars, { opacity: 0 }); } });
   };
   const stop = () => {
     running = false; gsap.ticker.remove(frame);
-    gsap.to(nameChars, { opacity: 1, duration: .35, overwrite: 'auto' });
-    gsap.to(cv, { opacity: 0, duration: .35, overwrite: true, onComplete: () => ctx.clearRect(0, 0, W, H) });
+    // el texto vuelve debajo de los puntos (que siguen opacos) y luego los puntos se desvanecen
+    gsap.set(nameChars, { opacity: 1 });
+    gsap.to(cv, { opacity: 0, duration: .5, ease: 'power1.inOut', overwrite: true, onComplete: () => ctx.clearRect(0, 0, W, H) });
   };
 
   addEventListener('pointermove', e => {
