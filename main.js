@@ -227,6 +227,7 @@ intro
   const centered = () => cards.forEach((card, i) => {
     const on = i === cur;
     card.dataset.cursor = on ? 'Ver más' : 'Ir';
+    card.classList.toggle('is-front', on);
     card.setAttribute('aria-current', on ? 'true' : 'false');
     card.tabIndex = on ? 0 : -1;
   });
