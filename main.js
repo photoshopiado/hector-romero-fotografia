@@ -206,16 +206,18 @@ intro
   let cur = 0, cw = cards[0].offsetWidth || 300, first = true;
   const offOf = i => ((i - cur + N + HALF) % N) - HALF;
   const stateFor = off => {
+    // como en la referencia: la central de frente, laterales muy giradas con aire entre ellas
+    // y las del fondo asomando por detrás. Se apilan por z-index (no se cruzan en 3D).
     const a = Math.abs(off), s = Math.sign(off);
     return {
-      x: s * (a === 0 ? 0 : a === 1 ? cw * .68 : cw * 1.08),
-      z: a === 0 ? 0 : a === 1 ? -cw * .5 : -cw * 1.05,
-      rotationY: s * (a === 0 ? 0 : a === 1 ? 52 : 64),
-      scale: a === 0 ? 1 : a === 1 ? .94 : .86,
+      x: s * (a === 0 ? 0 : a === 1 ? cw * .84 : cw * .6),
+      z: a === 0 ? 0 : a === 1 ? -cw * .12 : -cw * .9,
+      rotationY: s * (a === 0 ? 0 : a === 1 ? 66 : 72),
+      scale: a === 0 ? 1 : a === 1 ? .96 : .86,
       opacity: a > HALF ? 0 : 1
     };
   };
-  const shadeOf = a => (a === 0 ? 0 : a === 1 ? .45 : .7);
+  const shadeOf = a => (a === 0 ? 0 : a === 1 ? .2 : .55);
   const layout = (animate) => {
     cw = cards[0].offsetWidth || cw;
     cards.forEach((card, i) => {
