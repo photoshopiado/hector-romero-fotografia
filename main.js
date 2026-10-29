@@ -72,9 +72,94 @@ function splitWords(el) {
   return words.map(w => { const s = document.createElement('span'); s.className = 'w'; s.textContent = w.t; el.appendChild(s); el.append(' '); return s; });
 }
 
-/* hero + titles: chars rise */
+/* hero: el nombre se forma desde una nube de partículas */
 const heroChars = [...document.querySelectorAll('.hero__title .split')].flatMap(splitChars);
-gsap.set(heroChars, { yPercent: 115, rotate: 6 });
+gsap.set(heroChars, { autoAlpha: 0 });
+gsap.set('.hero__meta > *, .hero__foot > *, .nav > *', { autoAlpha: 0 });
+
+function heroParticles() {
+  const showHero = () => {
+    gsap.to(heroChars, { autoAlpha: 1, duration: .6, ease: 'power1.out' });
+    gsap.fromTo('.hero__meta > *, .hero__foot > *, .nav > *', { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out', stagger: .08, delay: .15 });
+  };
+  if (reduce) return showHero();
+  const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+
+  // 1) puntos objetivo: se dibuja cada letra en su posición real y se muestrea
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const o = off.getContext('2d', { willReadFrequently: true });
+  o.fillStyle = '#000'; o.textBaseline = 'alphabetic';
+  let minFont = 999;
+  document.querySelectorAll('.hero__title .split').forEach(group => {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    group.appendChild(probe);
+    const baseline = probe.getBoundingClientRect().bottom; probe.remove();
+    group.querySelectorAll('.ch').forEach(ch => {
+      const cs = getComputedStyle(ch), r = ch.getBoundingClientRect();
+      const size = parseFloat(cs.fontSize); minFont = Math.min(minFont, size);
+      o.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+      const t = cs.textTransform === 'uppercase' ? ch.textContent.toUpperCase() : ch.textContent;
+      o.fillText(t, r.left, baseline);
+    });
+  });
+  let step = Math.max(3, Math.round(minFont / 7));
+  let pts = [];
+  for (let tries = 0; tries < 4; tries++) {
+    const data = o.getImageData(0, 0, W, H).data; pts = [];
+    for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (data[(y * W + x) * 4 + 3] > 120) pts.push(x, y);
+    if (pts.length / 2 <= 16000) break;
+    step++;
+  }
+  const N = pts.length / 2;
+  if (!N) return showHero();
+
+  // 2) lienzo y partículas
+  const cv = document.createElement('canvas'); cv.className = 'fx fx--intro'; cv.setAttribute('aria-hidden', 'true');
+  cv.width = W * dpr; cv.height = H * dpr; document.body.appendChild(cv);
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  const P = Array.from({ length: N }, (_, i) => {
+    const tx = pts[i * 2], ty = pts[i * 2 + 1];
+    return { tx, ty, x0: rnd(-.25, 1.1) * W, sp: rnd(.5, 1.25), off: gauss(), ph: rnd(0, 6.28),
+             d: (tx / W) * .75 + rnd(0, .25), bend: gauss() * 90 };
+  });
+  const cy = H * .5, amp = H * .2;
+  const wave = (p, t) => {
+    const x = ((p.x0 + t * W * .09 * p.sp) % (W * 1.4)) - W * .2;
+    const k = x / W;
+    const thick = 40 + 150 * Math.max(0, .85 - Math.abs(k - .25) * 1.1);
+    const y = cy + Math.sin(k * 6.1 + t * 1.5) * amp * (.55 + .45 * Math.sin(t * .5 + k * 2)) + p.off * thick + Math.sin(t * 3 + p.ph) * 3;
+    return [x, y];
+  };
+  const ease = u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  const T1 = 1.15, DUR = 1.25, HOLD = .25, FADE = .6;
+  const END = T1 + .9 + DUR + HOLD;     // hasta que llega la última partícula
+  const dotR = Math.max(1, step * .42);
+  let t0 = null, revealed = false;
+  const tick = (time) => {
+    if (t0 === null) t0 = time;
+    const t = time - t0;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#efe9dc';
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const p = P[i];
+      const [wx, wy] = wave(p, t);
+      const u = Math.min(1, Math.max(0, (t - T1 - p.d * .9) / DUR)), e = ease(u);
+      const x = wx + (p.tx - wx) * e, y = wy + (p.ty - wy) * e + Math.sin(u * Math.PI) * p.bend;
+      const r = 1 + (dotR - 1) * e;
+      ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 6.2832);
+    }
+    ctx.fill();
+    if (t > END && !revealed) {
+      revealed = true; showHero();
+      gsap.to(cv, { opacity: 0, duration: FADE, ease: 'power1.inOut', onComplete: () => { gsap.ticker.remove(tick); cv.remove(); } });
+    }
+  };
+  gsap.ticker.add(tick);
+}
 
 /* loader */
 const count = document.getElementById('count');
@@ -87,8 +172,7 @@ intro
   .to('.loader__count, .loader__top', { yPercent: -30, opacity: 0, duration: .6, ease: 'power3.in' }, '+=.1')
   .to('.loader', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, '-=.2')
   .add(() => { document.body.classList.remove('is-loading'); lenis.start(); }, '-=.5')
-  .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: 'expo.out', stagger: .045 }, '-=.6')
-  .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9');
+  .add(heroParticles, '-=.9');
 
 /* destacados: slideshow con wipe */
 const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
