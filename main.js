@@ -183,10 +183,11 @@ intro
   .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9')
   .add(heroDust);
 
-/* destacados: carrusel 3D (flechas, teclado y gesto de arrastre) */
+/* destacados: carrusel 3D en anillo (como la referencia): las tarjetas giran sobre un cilindro,
+   las del fondo se ven por detrás (reverso) y la que entra al centro se desenfoca mientras se mueve */
 (() => {
   const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
-  const N = FEATURED.length, HALF = Math.floor(N / 2);
+  const N = FEATURED.length, STEP = 360 / N;
   const ring = document.getElementById('scRing'), stage = document.getElementById('scStage');
   const titlesEl = document.getElementById('showTitles');
   const countEl = document.getElementById('showCount'), catEl = document.getElementById('showCat'), linkEl = document.getElementById('showLink');
@@ -201,65 +202,57 @@ intro
     </a>`).join('');
   titlesEl.innerHTML = FEATURED.map(p => `<h3 class="sc__t">${p.t}</h3>`).join('');
   const cards = [...ring.children], tEls = [...titlesEl.children];
+  const shades = cards.map(c => c.querySelector('.sc__shade'));
   gsap.set(tEls, { yPercent: 115 });
+  gsap.set(cards, { xPercent: -50, yPercent: -50 });
 
   let cur = 0, cw = cards[0].offsetWidth || 300, first = true;
-  const offOf = i => ((i - cur + N + HALF) % N) - HALF;
-  const stateFor = off => {
-    // como en la referencia: la central de frente, laterales muy giradas con aire entre ellas
-    // y las del fondo asomando por detrás. Se apilan por z-index (no se cruzan en 3D).
-    const a = Math.abs(off), s = Math.sign(off);
-    return {
-      x: s * (a === 0 ? 0 : a === 1 ? cw * .84 : cw * .6),
-      z: a === 0 ? 0 : a === 1 ? -cw * .12 : -cw * .9,
-      rotationY: s * (a === 0 ? 0 : a === 1 ? 66 : 72),
-      scale: a === 0 ? 1 : a === 1 ? .96 : .86,
-      opacity: a > HALF ? 0 : 1
-    };
-  };
-  const shadeOf = a => (a === 0 ? 0 : a === 1 ? .2 : .55);
-  const layout = (animate) => {
-    cw = cards[0].offsetWidth || cw;
+  const S = { angle: 0, blur: 0 };                 // giro del anillo (grados) y desenfoque por movimiento
+  const norm = a => ((a + 540) % 360) - 180;       // a (-180, 180]
+  const RADIUS = .92;                               // radio del anillo en anchos de tarjeta
+
+  // coloca cada tarjeta en el anillo según el ángulo actual
+  const render = () => {
+    const R = cw * RADIUS;
     cards.forEach((card, i) => {
-      const off = offOf(i), old = card._off, st = stateFor(off), a = Math.abs(off);
-      card.style.zIndex = 10 - a;
-      card.dataset.cursor = off === 0 ? 'Ver más' : 'Ir';
-      card.setAttribute('aria-current', off === 0 ? 'true' : 'false');
-      card.tabIndex = off === 0 ? 0 : -1;
-      const shade = card.querySelector('.sc__shade');
-      if (!animate || old === undefined) {
-        gsap.set(card, { xPercent: -50, yPercent: -50, ...st });
-        gsap.set(shade, { opacity: shadeOf(a) });
-      } else {
-        // si la tarjeta tiene que dar la vuelta por detrás, aparece desde el lado opuesto
-        if (Math.abs(off - old) > HALF + .5) gsap.set(card, { ...stateFor(Math.sign(off) * (HALF + 1)), opacity: 0 });
-        gsap.to(card, { ...st, duration: .95, ease: 'power3.inOut', overwrite: true });
-        gsap.to(shade, { opacity: shadeOf(a), duration: .95, ease: 'power3.inOut', overwrite: true });
-        if (off === 0) gsap.fromTo(card, { filter: 'blur(5px)' }, { filter: 'blur(0px)', duration: .9, ease: 'power2.out', clearProps: 'filter' });
-      }
-      card._off = off;
+      const th = norm(i * STEP - S.angle), r = th * Math.PI / 180, a = Math.abs(th);
+      const x = R * Math.sin(r), z = R * (Math.cos(r) - 1);
+      gsap.set(card, { x, z, rotationY: th });
+      card.style.zIndex = 1000 + Math.round(z);   // el orden sigue a la profundidad real
+      shades[i].style.opacity = Math.min(.6, (a / 150) * .6).toFixed(3);
+      card.style.filter = S.blur > .25 && a < 80 ? `blur(${(S.blur * (1 - a / 100)).toFixed(2)}px)` : '';
     });
   };
+  const centered = () => cards.forEach((card, i) => {
+    const on = i === cur;
+    card.dataset.cursor = on ? 'Ver más' : 'Ir';
+    card.setAttribute('aria-current', on ? 'true' : 'false');
+    card.tabIndex = on ? 0 : -1;
+  });
   const setInfo = prev => {
     const p = FEATURED[cur];
     countEl.textContent = pad(cur + 1) + ' / ' + pad(N);
     catEl.textContent = p.c; linkEl.href = url(p);
     if (first) { gsap.set(tEls[cur], { yPercent: 0 }); return; }
-    const dir = ((cur - prev + N + HALF) % N) - HALF > 0 ? 1 : -1;
-    gsap.to(tEls[prev], { yPercent: -115 * dir, duration: .8, ease: 'power3.inOut', overwrite: true });
-    gsap.fromTo(tEls[cur], { yPercent: 115 * dir }, { yPercent: 0, duration: .8, ease: 'power3.inOut', overwrite: true });
+    const d = norm((cur - prev) * STEP) > 0 ? 1 : -1;
+    gsap.to(tEls[prev], { yPercent: -115 * d, duration: .8, ease: 'power3.inOut', overwrite: true });
+    gsap.fromTo(tEls[cur], { yPercent: 115 * d }, { yPercent: 0, duration: .8, ease: 'power3.inOut', overwrite: true });
   };
   const goTo = i => {
-    const prev = cur; cur = (i + N) % N;
-    if (cur === prev) return;
-    first = false; layout(true); setInfo(prev);
+    i = ((i % N) + N) % N;
+    if (i === cur) return;
+    const prev = cur, steps = norm((i - cur) * STEP) / STEP;     // camino más corto, con signo
+    cur = i; first = false; centered(); setInfo(prev);
+    const tw = gsap.to(S, { angle: S.angle + steps * STEP, duration: 1.05, ease: 'power3.inOut', overwrite: true, onUpdate: () => {
+      S.blur = Math.sin(tw.progress() * Math.PI) * 4.5; render();
+    }, onComplete: () => { S.blur = 0; render(); } });
   };
-  layout(false); setInfo(0); first = false;
+  centered(); setInfo(0); first = false; render();
 
   document.getElementById('scPrev').addEventListener('click', () => goTo(cur - 1));
   document.getElementById('scNext').addEventListener('click', () => goTo(cur + 1));
 
-  // clic: la tarjeta central abre Behance; las laterales se traen al centro
+  // clic: la tarjeta central abre Behance; las demás se traen al centro
   let moved = false;
   ring.addEventListener('click', e => {
     const card = e.target.closest('.sc__card'); if (!card) return;
@@ -281,7 +274,7 @@ intro
     if (!inView) return;
     if (e.key === 'ArrowLeft') goTo(cur - 1); else if (e.key === 'ArrowRight') goTo(cur + 1);
   });
-  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => layout(false), 150); });
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { cw = cards[0].offsetWidth || cw; render(); }, 150); });
 })();
 
 /* parallax hero out */
