@@ -244,8 +244,8 @@ intro
     catEl.textContent = p.c; linkEl.href = url(p);
     if (first) { gsap.set(tEls[cur], { yPercent: 0 }); return; }
     const dir = ((cur - prev + N + HALF) % N) - HALF > 0 ? 1 : -1;
-    gsap.to(tEls[prev], { yPercent: -115 * dir, duration: .6, ease: 'expo.inOut', overwrite: true });
-    gsap.fromTo(tEls[cur], { yPercent: 115 * dir }, { yPercent: 0, duration: .85, ease: 'expo.out', overwrite: true });
+    gsap.to(tEls[prev], { yPercent: -115 * dir, duration: .8, ease: 'power3.inOut', overwrite: true });
+    gsap.fromTo(tEls[cur], { yPercent: 115 * dir }, { yPercent: 0, duration: .8, ease: 'power3.inOut', overwrite: true });
   };
   const goTo = i => {
     const prev = cur; cur = (i + N) % N;
