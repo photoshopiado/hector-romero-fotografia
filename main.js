@@ -186,7 +186,8 @@ intro
 /* destacados: carrusel 3D en anillo (como la referencia): las tarjetas giran sobre un cilindro,
    las del fondo se ven por detrás (reverso) y la que entra al centro se desenfoca mientras se mueve */
 (() => {
-  const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
+  const SHORT = { 'Xiaomi 17 Mundialista EC': 'Xiaomi 17' };
+  const FEATURED = [5, 6, 7, 4, 9, 3, 10, 8].map(i => PROJECTS[i]).map(p => { const t = p.t.split(' · ')[0]; return { ...p, t: SHORT[t] || t }; });
   const N = FEATURED.length, STEP = 360 / N;
   const ring = document.getElementById('scRing'), stage = document.getElementById('scStage');
   const titlesEl = document.getElementById('showTitles');
@@ -203,13 +204,13 @@ intro
   titlesEl.innerHTML = FEATURED.map(p => `<h3 class="sc__t">${p.t}</h3>`).join('');
   const cards = [...ring.children], tEls = [...titlesEl.children];
   const shades = cards.map(c => c.querySelector('.sc__shade'));
-  gsap.set(tEls, { yPercent: 115 });
+  gsap.set(tEls, { yPercent: 115, xPercent: -50 });   // títulos centrados
   gsap.set(cards, { xPercent: -50, yPercent: -50 });
 
   let cur = 0, cw = cards[0].offsetWidth || 300, first = true;
   const S = { angle: 0, blur: 0 };                 // giro del anillo (grados) y desenfoque por movimiento
   const norm = a => ((a + 540) % 360) - 180;       // a (-180, 180]
-  const RADIUS = .92;                               // radio del anillo en anchos de tarjeta
+  const RADIUS = 1.5;                                // radio del anillo en anchos de tarjeta
 
   // coloca cada tarjeta en el anillo según el ángulo actual
   const render = () => {
