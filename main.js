@@ -72,93 +72,98 @@ function splitWords(el) {
   return words.map(w => { const s = document.createElement('span'); s.className = 'w'; s.textContent = w.t; el.appendChild(s); el.append(' '); return s; });
 }
 
-/* hero: el nombre se forma desde una nube de partículas */
+/* hero + titles: chars rise */
 const heroChars = [...document.querySelectorAll('.hero__title .split')].flatMap(splitChars);
-gsap.set(heroChars, { autoAlpha: 0 });
-gsap.set('.hero__meta > *, .hero__foot > *, .nav > *', { autoAlpha: 0 });
+gsap.set(heroChars, { yPercent: 115, rotate: 6 });
 
-function heroParticles() {
-  const showHero = () => {
-    gsap.to(heroChars, { autoAlpha: 1, duration: .6, ease: 'power1.out' });
-    gsap.fromTo('.hero__meta > *, .hero__foot > *, .nav > *', { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out', stagger: .08, delay: .15 });
-  };
-  if (reduce) return showHero();
-  const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+/* hero: al pasar el mouse, "HÉCTOR Romero" se vuelve nube de partículas */
+function heroDust() {
+  if (reduce || !matchMedia('(hover:hover)').matches) return;
+  const nameChars = [...document.querySelectorAll('.hero__title .split:not(.aka) .ch')];
+  let cv, ctx, P = [], N = 0, W = 0, H = 0, dpr = 1, dotR = 2, box = null, ready = false;
+  let active = false, running = false, lastIn = 0;
+  const R = 120;
+  const mouse = { x: -999, y: -999 };
 
-  // 1) puntos objetivo: se dibuja cada letra en su posición real y se muestrea
-  const off = document.createElement('canvas'); off.width = W; off.height = H;
-  const o = off.getContext('2d', { willReadFrequently: true });
-  o.fillStyle = '#000'; o.textBaseline = 'alphabetic';
-  let minFont = 999;
-  document.querySelectorAll('.hero__title .split').forEach(group => {
-    const probe = document.createElement('span');
-    probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-    group.appendChild(probe);
-    const baseline = probe.getBoundingClientRect().bottom; probe.remove();
-    group.querySelectorAll('.ch').forEach(ch => {
-      const cs = getComputedStyle(ch), r = ch.getBoundingClientRect();
-      const size = parseFloat(cs.fontSize); minFont = Math.min(minFont, size);
-      o.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
-      const t = cs.textTransform === 'uppercase' ? ch.textContent.toUpperCase() : ch.textContent;
-      o.fillText(t, r.left, baseline);
+  const build = () => {
+    W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+    const off = document.createElement('canvas'); off.width = W; off.height = H;
+    const o = off.getContext('2d', { willReadFrequently: true });
+    o.fillStyle = '#000'; o.textBaseline = 'alphabetic';
+    let minFont = 999, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    document.querySelectorAll('.hero__title .split:not(.aka)').forEach(group => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+      group.appendChild(probe);
+      const baseline = probe.getBoundingClientRect().bottom; probe.remove();
+      group.querySelectorAll('.ch').forEach(ch => {
+        const cs = getComputedStyle(ch), r = ch.getBoundingClientRect(), size = parseFloat(cs.fontSize);
+        minFont = Math.min(minFont, size);
+        o.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+        o.fillText(cs.textTransform === 'uppercase' ? ch.textContent.toUpperCase() : ch.textContent, r.left, baseline);
+        x0 = Math.min(x0, r.left); x1 = Math.max(x1, r.right); y0 = Math.min(y0, r.top); y1 = Math.max(y1, r.bottom);
+      });
     });
-  });
-  let step = Math.max(3, Math.round(minFont / 7));
-  let pts = [];
-  for (let tries = 0; tries < 4; tries++) {
-    const data = o.getImageData(0, 0, W, H).data; pts = [];
-    for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (data[(y * W + x) * 4 + 3] > 120) pts.push(x, y);
-    if (pts.length / 2 <= 16000) break;
-    step++;
-  }
-  const N = pts.length / 2;
-  if (!N) return showHero();
-
-  // 2) lienzo y partículas
-  const cv = document.createElement('canvas'); cv.className = 'fx fx--intro'; cv.setAttribute('aria-hidden', 'true');
-  cv.width = W * dpr; cv.height = H * dpr; document.body.appendChild(cv);
-  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-  const rnd = (a, b) => a + Math.random() * (b - a);
-  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-  const P = Array.from({ length: N }, (_, i) => {
-    const tx = pts[i * 2], ty = pts[i * 2 + 1];
-    return { tx, ty, x0: rnd(-.25, 1.1) * W, sp: rnd(.5, 1.25), off: gauss(), ph: rnd(0, 6.28),
-             d: (tx / W) * .75 + rnd(0, .25), bend: gauss() * 90 };
-  });
-  const cy = H * .5, amp = H * .2;
-  const wave = (p, t) => {
-    const x = ((p.x0 + t * W * .09 * p.sp) % (W * 1.4)) - W * .2;
-    const k = x / W;
-    const thick = 40 + 150 * Math.max(0, .85 - Math.abs(k - .25) * 1.1);
-    const y = cy + Math.sin(k * 6.1 + t * 1.5) * amp * (.55 + .45 * Math.sin(t * .5 + k * 2)) + p.off * thick + Math.sin(t * 3 + p.ph) * 3;
-    return [x, y];
+    box = { x0: x0 - 30, y0: y0 - 20, x1: x1 + 30, y1: y1 + 20 };
+    let step = Math.max(3, Math.round(W / 300)), pts = [];
+    for (let tries = 0; tries < 4; tries++) {
+      const data = o.getImageData(0, 0, W, H).data; pts = [];
+      for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (data[(y * W + x) * 4 + 3] > 120) pts.push(x, y);
+      if (pts.length / 2 <= 16000) break;
+      step++;
+    }
+    N = pts.length / 2; dotR = Math.max(1.2, step * .5);
+    P = Array.from({ length: N }, (_, i) => ({ hx: pts[i * 2], hy: pts[i * 2 + 1], x: pts[i * 2], y: pts[i * 2 + 1], vx: 0, vy: 0 }));
+    if (!cv) {
+      cv = document.createElement('canvas'); cv.className = 'fx fx--intro'; cv.setAttribute('aria-hidden', 'true'); cv.style.opacity = 0;
+      document.body.appendChild(cv); ctx = cv.getContext('2d');
+    }
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ready = true;
   };
-  const ease = u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
-  const T1 = 1.15, DUR = 1.25, HOLD = .25, FADE = .6;
-  const END = T1 + .9 + DUR + HOLD;     // hasta que llega la última partícula
-  const dotR = Math.max(1, step * .42);
-  let t0 = null, revealed = false;
-  const tick = (time) => {
-    if (t0 === null) t0 = time;
-    const t = time - t0;
+
+  const frame = () => {
+    if (!running) return;
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#efe9dc';
-    ctx.beginPath();
+    ctx.fillStyle = '#efe9dc'; ctx.beginPath();
+    let moving = 0;
     for (let i = 0; i < N; i++) {
       const p = P[i];
-      const [wx, wy] = wave(p, t);
-      const u = Math.min(1, Math.max(0, (t - T1 - p.d * .9) / DUR)), e = ease(u);
-      const x = wx + (p.tx - wx) * e, y = wy + (p.ty - wy) * e + Math.sin(u * Math.PI) * p.bend;
-      const r = 1 + (dotR - 1) * e;
-      ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 6.2832);
+      const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
+      if (active && d2 < R * R) {
+        const d = Math.sqrt(d2) || 1, f = (1 - d / R) * 5.5;
+        p.vx += (dx / d) * f + (Math.random() - .5) * .8; p.vy += (dy / d) * f + (Math.random() - .5) * .8;
+      }
+      p.vx += (p.hx - p.x) * .055; p.vy += (p.hy - p.y) * .055;
+      p.vx *= .84; p.vy *= .84; p.x += p.vx; p.y += p.vy;
+      if (Math.abs(p.vx) + Math.abs(p.vy) > .08 || Math.abs(p.hx - p.x) + Math.abs(p.hy - p.y) > .8) moving++;
+      ctx.moveTo(p.x + dotR, p.y); ctx.arc(p.x, p.y, dotR, 0, 6.2832);
     }
     ctx.fill();
-    if (t > END && !revealed) {
-      revealed = true; showHero();
-      gsap.to(cv, { opacity: 0, duration: FADE, ease: 'power1.inOut', onComplete: () => { gsap.ticker.remove(tick); cv.remove(); } });
-    }
+    if (!active && !moving && performance.now() - lastIn > 400) stop();
   };
-  gsap.ticker.add(tick);
+
+  const start = () => {
+    if (running) return;
+    running = true; gsap.ticker.add(frame);
+    gsap.to(cv, { opacity: 1, duration: .2, overwrite: true });
+    gsap.to(nameChars, { opacity: 0, duration: .2, overwrite: 'auto' });
+  };
+  const stop = () => {
+    running = false; gsap.ticker.remove(frame);
+    gsap.to(nameChars, { opacity: 1, duration: .35, overwrite: 'auto' });
+    gsap.to(cv, { opacity: 0, duration: .35, overwrite: true, onComplete: () => ctx.clearRect(0, 0, W, H) });
+  };
+
+  addEventListener('pointermove', e => {
+    if (!ready || scrollY > 30) { active = false; return; }
+    mouse.x = e.clientX; mouse.y = e.clientY;
+    const inside = e.clientX > box.x0 && e.clientX < box.x1 && e.clientY > box.y0 && e.clientY < box.y1;
+    if (inside) { lastIn = performance.now(); active = true; start(); } else active = false;
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => { active = false; });
+  addEventListener('resize', () => { if (!running) build(); });
+  document.fonts.ready.then(build).catch(e => console.error('heroDust', e));
 }
 
 /* loader */
@@ -172,7 +177,9 @@ intro
   .to('.loader__count, .loader__top', { yPercent: -30, opacity: 0, duration: .6, ease: 'power3.in' }, '+=.1')
   .to('.loader', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, '-=.2')
   .add(() => { document.body.classList.remove('is-loading'); lenis.start(); }, '-=.5')
-  .add(heroParticles, '-=.9');
+  .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: 'expo.out', stagger: .045 }, '-=.6')
+  .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9')
+  .add(heroDust);
 
 /* destacados: slideshow con wipe */
 const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
