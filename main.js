@@ -25,7 +25,7 @@ track.innerHTML = PROJECTS.map((p, i) => `
     <div class="card__media">
       <span class="card__num">${pad(i + 1)} / ${pad(PROJECTS.length)}</span>
       <span class="card__go">↗</span>
-      <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" width="808" loading="lazy" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
+      <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" width="808" height="632" decoding="async" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
     </div>
     <div class="card__info"><h3>${p.t}</h3><span>${p.c}</span></div>
   </a>`).join('') + `
@@ -53,7 +53,7 @@ window.lenis = lenis;
 lenis.stop();
 document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
   const t = document.querySelector(a.getAttribute('href'));
-  if (t) { e.preventDefault(); lenis.scrollTo(t, { duration: 1.6 }); }
+  if (t) { e.preventDefault(); lenis.scrollTo(t, { duration: 1.6, offset: (t.id === 'top' || t.id === 'trabajo') ? 0 : -70 }); }
 }));
 
 /* split helpers */
@@ -174,7 +174,7 @@ const bar = document.querySelector('.loader__bar i');
 const state = { v: 0 };
 const intro = gsap.timeline();
 intro
-  .to(state, { v: 100, duration: reduce ? .3 : 2.2, ease: 'power2.inOut', onUpdate: () => {
+  .to(state, { v: 100, duration: reduce ? .3 : 1.3, ease: 'power2.inOut', onUpdate: () => {
       count.textContent = Math.round(state.v); bar.style.width = state.v + '%'; } })
   .to('.loader__count, .loader__top', { yPercent: -30, opacity: 0, duration: .6, ease: 'power3.in' }, '+=.1')
   .to('.loader', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, '-=.2')
@@ -196,7 +196,7 @@ intro
 
   ring.innerHTML = FEATURED.map((p, i) => `
     <a class="sc__card" href="${url(p)}" target="_blank" rel="noopener" data-i="${i}" data-cursor="Ver más" draggable="false">
-      <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" draggable="false" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
+      <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" width="808" height="632" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
       <span class="sc__shade"></span>
       <span class="sc__tag">${pad(i + 1)} / ${pad(N)}</span>
       <span class="sc__name">${p.t}</span>
@@ -264,6 +264,7 @@ intro
   // arrastre / gesto táctil
   let sx = 0, down = false;
   stage.addEventListener('pointerdown', e => { if (e.target.closest('.sc__arrow')) return; down = true; moved = false; sx = e.clientX; });
+  addEventListener('pointercancel', () => { down = false; });
   addEventListener('pointerup', e => {
     if (!down) return; down = false;
     const dx = e.clientX - sx;

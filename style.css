@@ -64,8 +64,6 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 .hero__title .line--serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.04em;margin-left:0}
 .hero__foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:clamp(24px,4vw,56px);gap:24px}
 .hero__lead{max-width:36ch;font-size:clamp(16px,1.5vw,22px);color:var(--fg);opacity:.85}
-.hero__scroll{font-size:12px;letter-spacing:.14em;text-transform:uppercase;display:flex;gap:10px;align-items:center}
-.hero__scroll b{display:inline-block;animation:bob 1.6s var(--ease) infinite}
 @keyframes bob{50%{transform:translateY(6px)}}
 @media(max-width:700px){.hero__meta span:nth-child(3){display:none}}
 
@@ -161,7 +159,7 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 .foot{background:var(--bg);display:flex;justify-content:space-between;gap:16px;padding:26px var(--pad);font-size:13px;color:var(--mute);flex-wrap:wrap}
 .foot a:hover{color:var(--fg)}
 
-@media(prefers-reduced-motion:reduce){.grain,.hero__avail i,.hero__scroll b{animation:none}}
+@media(prefers-reduced-motion:reduce){.grain,.hero__avail i{animation:none}}
 
 /* trayectoria */
 .exp{padding:clamp(80px,12vw,200px) var(--pad)}
@@ -259,3 +257,61 @@ em{font-family:var(--serif);font-style:italic;font-weight:400}
 .hero__title a.aka:hover{color:var(--fg)}
 
 .fx--intro{position:fixed;inset:0;width:100%;height:100%;z-index:84;pointer-events:none}
+
+
+/* ===== Pasada de UX / móvil ===== */
+/* foco visible para teclado */
+:focus-visible{outline:2px solid var(--fg);outline-offset:4px;border-radius:4px}
+.services :focus-visible,.contact :focus-visible{outline-color:var(--bg)}
+
+/* enlace "Ver todo en Behance" junto al título del Book */
+.work__all{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);padding:10px 0;transition:color .3s;white-space:nowrap}
+.work__all:hover{color:var(--fg)}
+
+/* el carrusel no puede desplazarse por dentro ni al enfocar tarjetas fuera de vista */
+.sc{overflow:clip}
+.sc__stage{touch-action:pan-y}
+
+/* servicios: solo hover decorativo, no parece clicable */
+.services__list li{cursor:default}
+
+/* contraste de etiquetas pequeñas sobre fondo crema */
+.services .manifest__label,.contact .manifest__label{color:#5f5f5c}
+
+/* áreas táctiles de al menos 44px */
+.nav__logo{display:inline-flex;align-items:center;min-height:44px;padding-right:8px}
+.nav__cta{min-height:44px}
+.foot a,.sc__side a{display:inline-flex;align-items:center;min-height:44px}
+
+/* táctil: sin depender de hover */
+@media(hover:none){
+  .card__media img{filter:none;transform:scale(1.06)}
+  .card__go{transform:none}
+}
+
+/* tablet y móvil */
+@media(max-width:899px){
+  /* Book: rejilla de 2 columnas en lugar de una tarjeta por pantalla */
+  .work__head{flex-direction:row;align-items:flex-end;flex-wrap:wrap;gap:8px 24px}
+  .work__track{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 18px;width:100%}
+  .card{width:100%}
+  .card__info{flex-direction:column;align-items:flex-start;gap:4px}
+  .card__info h3{font-size:clamp(14px,3.6vw,20px)}
+  .card--all .big{font-size:clamp(24px,7vw,48px)}
+}
+
+@media(max-width:700px){
+  /* hero: respiro inferior, también en iPhone con barra */
+  .hero{padding-bottom:calc(var(--pad) + 44px + env(safe-area-inset-bottom,0px))}
+  .hero__meta{font-size:11px}
+  .hero__lead{font-size:17px}
+  /* carrusel: el título más largo ("Chuan Yu Ramen") siempre cabe */
+  .sc__titles{font-size:min(12vw,calc((100vw - 2*var(--pad)) / 8.4))}
+  /* logos de clientes legibles */
+  .marquee__in img{height:calc(72px * var(--k,1));margin-right:36px}
+  /* un enlace de contacto siempre a mano en el menú */
+  .nav__links{display:flex}
+  .nav__links a:not([href="#contacto"]){display:none}
+  /* texto de servicios y trayectoria un poco más grande */
+  .services__list p,.exp__list p{font-size:15px}
+}
