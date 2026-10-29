@@ -30,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261029140427">
+<link rel="stylesheet" href="style.css?v=20261029141014">
 </head>
 <body>
 
@@ -76,21 +76,19 @@
     </div>
   </section>
 
-  <!-- DESTACADOS: slideshow pinned -->
-  <section class="show" id="show">
-    <div class="show__pin">
-      <div class="show__slides" id="slides"></div>
-      <div class="show__shade"></div>
-      <div class="show__ui">
-        <div class="show__top"><span>Selección destacada</span><span id="showCount">01 / 05</span></div>
-        <div class="show__bottom">
-          <div class="show__titles" id="showTitles"></div>
-          <div class="show__side"><span id="showCat">—</span><span class="show__cta">Ver caso en Behance ↗</span></div>
-        </div>
-      </div>
+  <!-- DESTACADOS: carrusel 3D con flechas -->
+  <section class="sc" id="show" aria-roledescription="carrusel" aria-label="Selección destacada">
+    <div class="sc__head"><span>Selección destacada</span><span id="showCount">01 / 05</span></div>
+    <div class="sc__stage" id="scStage">
+      <div class="sc__ring" id="scRing"></div>
+      <button class="sc__arrow sc__arrow--prev" id="scPrev" type="button" aria-label="Proyecto anterior" data-cursor="Anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="sc__arrow sc__arrow--next" id="scNext" type="button" aria-label="Proyecto siguiente" data-cursor="Siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="sc__foot">
+      <div class="sc__titles" id="showTitles"></div>
+      <div class="sc__side"><span id="showCat">—</span><a id="showLink" href="https://www.behance.net/Photoshopiado" target="_blank" rel="noopener">Ver caso en Behance ↗</a></div>
     </div>
   </section>
-
 
   <!-- MANIFIESTO -->
   <section class="manifest">
@@ -170,6 +168,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="main.js?v=20261029140427" defer></script>
+<script src="main.js?v=20261029141014" defer></script>
 </body>
 </html>

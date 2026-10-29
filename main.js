@@ -183,36 +183,104 @@ intro
   .from('.hero__meta > *, .hero__foot > *, .nav > *', { y: 20, opacity: 0, duration: 1, ease: 'power3.out', stagger: .08 }, '-=.9')
   .add(heroDust);
 
-/* destacados: slideshow con wipe */
-const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
-const slidesEl = document.getElementById('slides'), titlesEl = document.getElementById('showTitles');
-slidesEl.innerHTML = FEATURED.map(p => `
-  <a class="slide" href="https://www.behance.net/gallery/${p.id}" target="_blank" rel="noopener" data-cursor="Ver más" aria-label="${p.t} en Behance">
-    <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
-  </a>`).join('');
-titlesEl.innerHTML = FEATURED.map(p => `<h3 class="show__t">${p.t}</h3>`).join('');
-const slides = gsap.utils.toArray('.slide'), tEls = gsap.utils.toArray('.show__t');
-gsap.set(tEls, { yPercent: 110 }); gsap.set(tEls[0], { yPercent: 0 });
-gsap.set(slides.slice(1), { clipPath: 'inset(100% 0% 0% 0%)' });
-gsap.set(slides.map(s => s.querySelector('img')), { scale: 1.25 });
-gsap.set(slides[0].querySelector('img'), { scale: 1 });
-const showCount = document.getElementById('showCount'), showCat = document.getElementById('showCat');
-showCat.textContent = FEATURED[0].c;
-let cur = 0;
-const showTl = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: '#show', start: 'top top', end: '+=' + (FEATURED.length - 1) * 110 + '%', scrub: .7, pin: '.show__pin', anticipatePin: 1,
-  onUpdate: self => {
-    const i = Math.min(FEATURED.length - 1, Math.round(self.progress * (FEATURED.length - 1)));
-    if (i === cur) return;
-    gsap.to(tEls[cur], { yPercent: i > cur ? -110 : 110, duration: .6, ease: 'expo.inOut', overwrite: true });
-    gsap.fromTo(tEls[i], { yPercent: i > cur ? 110 : -110 }, { yPercent: 0, duration: .8, ease: 'expo.out', overwrite: true });
-    cur = i; showCount.textContent = pad(i + 1) + ' / ' + pad(FEATURED.length); showCat.textContent = FEATURED[i].c;
-  } } });
-slides.forEach((s, i) => {
-  if (i === 0) return;
-  showTl.to(s, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1 }, i - 1)
-        .to(s.querySelector('img'), { scale: 1, duration: 1 }, i - 1)
-        .to(slides[i - 1].querySelector('img'), { yPercent: -8, duration: 1 }, i - 1);
-});
+/* destacados: carrusel 3D (flechas, teclado y gesto de arrastre) */
+(() => {
+  const FEATURED = [5, 6, 7, 4, 9].map(i => PROJECTS[i]).map(p => ({ ...p, t: p.t.split(' · ')[0] }));
+  const N = FEATURED.length, HALF = Math.floor(N / 2);
+  const ring = document.getElementById('scRing'), stage = document.getElementById('scStage');
+  const titlesEl = document.getElementById('showTitles');
+  const countEl = document.getElementById('showCount'), catEl = document.getElementById('showCat'), linkEl = document.getElementById('showLink');
+  const url = p => 'https://www.behance.net/gallery/' + p.id;
+
+  ring.innerHTML = FEATURED.map((p, i) => `
+    <a class="sc__card" href="${url(p)}" target="_blank" rel="noopener" data-i="${i}" data-cursor="Ver más" draggable="false">
+      <img src="${imgSrc(p)}" alt="${p.t}: fotografía ${p.c.toLowerCase()} por Héctor Romero, Quito" draggable="false" onerror="this.onerror=null;this.src='${imgFallback(p)}'">
+      <span class="sc__shade"></span>
+      <span class="sc__tag">${pad(i + 1)} / ${pad(N)}</span>
+      <span class="sc__name">${p.t}</span>
+    </a>`).join('');
+  titlesEl.innerHTML = FEATURED.map(p => `<h3 class="sc__t">${p.t}</h3>`).join('');
+  const cards = [...ring.children], tEls = [...titlesEl.children];
+  gsap.set(tEls, { yPercent: 115 });
+
+  let cur = 0, cw = cards[0].offsetWidth || 300, first = true;
+  const offOf = i => ((i - cur + N + HALF) % N) - HALF;
+  const stateFor = off => {
+    const a = Math.abs(off), s = Math.sign(off);
+    return {
+      x: s * (a === 0 ? 0 : a === 1 ? cw * .68 : cw * 1.08),
+      z: a === 0 ? 0 : a === 1 ? -cw * .5 : -cw * 1.05,
+      rotationY: s * (a === 0 ? 0 : a === 1 ? 52 : 64),
+      scale: a === 0 ? 1 : a === 1 ? .94 : .86,
+      opacity: a > HALF ? 0 : 1
+    };
+  };
+  const shadeOf = a => (a === 0 ? 0 : a === 1 ? .45 : .7);
+  const layout = (animate) => {
+    cw = cards[0].offsetWidth || cw;
+    cards.forEach((card, i) => {
+      const off = offOf(i), old = card._off, st = stateFor(off), a = Math.abs(off);
+      card.style.zIndex = 10 - a;
+      card.dataset.cursor = off === 0 ? 'Ver más' : 'Ir';
+      card.setAttribute('aria-current', off === 0 ? 'true' : 'false');
+      card.tabIndex = off === 0 ? 0 : -1;
+      const shade = card.querySelector('.sc__shade');
+      if (!animate || old === undefined) {
+        gsap.set(card, { xPercent: -50, yPercent: -50, ...st });
+        gsap.set(shade, { opacity: shadeOf(a) });
+      } else {
+        // si la tarjeta tiene que dar la vuelta por detrás, aparece desde el lado opuesto
+        if (Math.abs(off - old) > HALF + .5) gsap.set(card, { ...stateFor(Math.sign(off) * (HALF + 1)), opacity: 0 });
+        gsap.to(card, { ...st, duration: .95, ease: 'power3.inOut', overwrite: true });
+        gsap.to(shade, { opacity: shadeOf(a), duration: .95, ease: 'power3.inOut', overwrite: true });
+        if (off === 0) gsap.fromTo(card, { filter: 'blur(5px)' }, { filter: 'blur(0px)', duration: .9, ease: 'power2.out', clearProps: 'filter' });
+      }
+      card._off = off;
+    });
+  };
+  const setInfo = prev => {
+    const p = FEATURED[cur];
+    countEl.textContent = pad(cur + 1) + ' / ' + pad(N);
+    catEl.textContent = p.c; linkEl.href = url(p);
+    if (first) { gsap.set(tEls[cur], { yPercent: 0 }); return; }
+    const dir = ((cur - prev + N + HALF) % N) - HALF > 0 ? 1 : -1;
+    gsap.to(tEls[prev], { yPercent: -115 * dir, duration: .6, ease: 'expo.inOut', overwrite: true });
+    gsap.fromTo(tEls[cur], { yPercent: 115 * dir }, { yPercent: 0, duration: .85, ease: 'expo.out', overwrite: true });
+  };
+  const goTo = i => {
+    const prev = cur; cur = (i + N) % N;
+    if (cur === prev) return;
+    first = false; layout(true); setInfo(prev);
+  };
+  layout(false); setInfo(0); first = false;
+
+  document.getElementById('scPrev').addEventListener('click', () => goTo(cur - 1));
+  document.getElementById('scNext').addEventListener('click', () => goTo(cur + 1));
+
+  // clic: la tarjeta central abre Behance; las laterales se traen al centro
+  let moved = false;
+  ring.addEventListener('click', e => {
+    const card = e.target.closest('.sc__card'); if (!card) return;
+    const i = +card.dataset.i;
+    if (moved || i !== cur) { e.preventDefault(); if (!moved) goTo(i); }
+  });
+  // arrastre / gesto táctil
+  let sx = 0, down = false;
+  stage.addEventListener('pointerdown', e => { if (e.target.closest('.sc__arrow')) return; down = true; moved = false; sx = e.clientX; });
+  addEventListener('pointerup', e => {
+    if (!down) return; down = false;
+    const dx = e.clientX - sx;
+    if (Math.abs(dx) > 45) { moved = true; goTo(cur + (dx < 0 ? 1 : -1)); setTimeout(() => { moved = false; }, 60); }
+  });
+  // teclado, solo mientras el carrusel está a la vista
+  let inView = false;
+  new IntersectionObserver(([en]) => { inView = en.isIntersecting; }, { threshold: .4 }).observe(stage);
+  addEventListener('keydown', e => {
+    if (!inView) return;
+    if (e.key === 'ArrowLeft') goTo(cur - 1); else if (e.key === 'ArrowRight') goTo(cur + 1);
+  });
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => layout(false), 150); });
+})();
 
 /* parallax hero out */
 gsap.to('.hero__title', { yPercent: -18, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
