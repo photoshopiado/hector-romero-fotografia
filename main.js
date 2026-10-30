@@ -157,6 +157,17 @@ function heroDust() {
     gsap.to(cv, { opacity: 0, duration: .5, ease: 'power1.inOut', overwrite: true, onComplete: () => ctx.clearRect(0, 0, W, H) });
   };
 
+  // al hacer scroll el efecto se corta de inmediato: nada queda flotando sobre la página
+  const kill = () => {
+    active = false;
+    if (!running && (!cv || +cv.style.opacity === 0)) return;
+    running = false; gsap.ticker.remove(frame);
+    gsap.killTweensOf(cv);
+    cv.style.opacity = 0; ctx.clearRect(0, 0, W, H);
+    gsap.set(nameChars, { opacity: 1 });
+    P.forEach(p => { p.x = p.hx; p.y = p.hy; p.vx = p.vy = 0; });
+  };
+  addEventListener('scroll', () => { if (scrollY > 2) kill(); }, { passive: true });
   addEventListener('pointermove', e => {
     if (scrollY > 30) { active = false; return; }
     if ((!ready || !N || W !== innerWidth || H !== innerHeight) && !running) build();
